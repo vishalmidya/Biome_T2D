@@ -230,7 +230,6 @@ for(i in 1:nrow(data_pred)){
 ##############################
 
 d_logis_dummy <- as.data.frame(dummify(data_pred[,!(colnames(data_pred) %in% c("month_yr_enrl"))]))
-
 new_quantile <- function(x, cuts ){
   
   y <- x[x!= 0 & !is.na(x)]
@@ -323,34 +322,6 @@ d_logis_dummy$wqs_pfas <- pos_pfas_t2d_wqs$wqs
 # PFHpA_Aug21_q PFHpA_Aug21_q 4.955160e-02
 # PFDA_Aug21_q   PFDA_Aug21_q 1.360001e-03
 # PFHpS_Aug21_q PFHpS_Aug21_q 4.296387e-05
-
-
-
-start.time <- Sys.time()
-
-pos_pfas_t2d_wqs <- gwqsrh(status ~ wqs + self_reported_race.African.American
-                           + self_reported_race.European.American + age_at_enrollment
-                           + smoking_at_enrollment.No + gender.Female
-                           + bmi_at_enrollment_imputed,
-                           mix_name = name_data_wqs, data = d_logis_dummy, q = NULL, signal = "t2",
-                           validation = 0.25, b = 500, rs = F, rh = 20,
-                           b1_pos = T,  family = "binomial",plan_strategy = "multicore")
-
-summary(pos_pfas_t2d_wqs)
-
-end.time <- Sys.time()
-(time.taken <- end.time - start.time)
-
-pos_pfas_t2d_wqs$final_weights
-
-#                    mix_name    Estimate        2.5 %      97.5%
-# PFOS_Aug21_q   PFOS_Aug21_q 0.439852378 2.297773e-01 0.70862230
-# PFHpA_Aug21_q PFHpA_Aug21_q 0.207809587 4.512701e-02 0.38486808
-# PFOA_Aug21_q   PFOA_Aug21_q 0.128671308 4.358734e-02 0.35455778
-# PFHxS_Aug21_q PFHxS_Aug21_q 0.099206354 1.945692e-02 0.22839569
-# PFNA_Aug21_q   PFNA_Aug21_q 0.067676970 8.573174e-03 0.12640295
-# PFDA_Aug21_q   PFDA_Aug21_q 0.047951243 5.560138e-03 0.11362042
-# PFHpS_Aug21_q PFHpS_Aug21_q 0.008832161 1.210982e-05 0.02714881
 
 
 # PFAS WQS Index
@@ -512,10 +483,6 @@ bwqs_pos_pfas_met$q.value <-  q$qvalues
 
 write.csv(bwqs_pos_pfas_met, "C:/Users/midyav01/OneDrive - The Mount Sinai Hospital/MSSM Projects/BIOME-PFAS pilot/T2D/Paper T2D/pos/posmode_meta_vs_pfas_bwqs.csv",
           row.names = F)
-# 
-
-# sort(bwqs_pos_pfas_met$q.value)[38]    
-# 0.1534536
 
 write.table(bwqs_pos_pfas_met[,c("mz","time","p.value","mean")], sep = "\t",
             "C:/Users/midyav01/OneDrive - The Mount Sinai Hospital/MSSM Projects/BIOME-PFAS pilot/T2D/Paper T2D/pos/bwqs_exwas_pfas_meta_mummichog.txt",row.names = F, col.names = F)
@@ -596,7 +563,8 @@ d_lm_status <- read.csv("C:/Users/midyav01/OneDrive - The Mount Sinai Hospital/M
 
 bb <- bwqs_pos_pfas_met[bwqs_pos_pfas_met$p.value < 0.05,c("refmet_name")]
 tt <- d_lm_status[d_lm_status$p.value < 0.05, c("refmet_name")]
-cc <- intersect(bb,tt) 
+# cc <- intersect(bb,tt) 
+cc <- c(bb,tt)
 
 ft <-bwqs_pos_pfas_met[bwqs_pos_pfas_met$refmet_name %in% cc,c("refmet_name","mean","p.value","q.value")]
 ft <- ft[order(ft$refmet_name),]
@@ -608,93 +576,36 @@ common_tab <- data.frame(refmet_name = dt[,"refmet_name"], mean.pfas.met = ft$me
                          qval.pfas.met = ft$q.value, mean.met.t2d = dt$Value, pval.met.t2d = dt$p.value,
                          qval.met.t2d = dt$q.value)
 
-
-
-# Negative mode
-
-bwqs_neg_pfas_met <-   read.csv("C:/Users/midyav01/OneDrive - The Mount Sinai Hospital/MSSM Projects/BIOME-PFAS pilot/T2D/Paper T2D/neg/negmode_meta_vs_pfas_bwqs.csv")
-d_lm_status <- read.csv("C:/Users/midyav01/OneDrive - The Mount Sinai Hospital/MSSM Projects/BIOME-PFAS pilot/T2D/Paper T2D/neg/mixedmodel_exwas_t2d_meta_all.csv")
-
-bb <- bwqs_neg_pfas_met[bwqs_neg_pfas_met$p.value < 0.05,c("refmet_name")]
-tt <- d_lm_status[d_lm_status$p.value < 0.05, c("refmet_name")]
-cc <- intersect(bb,tt) 
-
-ft <-bwqs_neg_pfas_met[bwqs_neg_pfas_met$refmet_name %in% cc,c("refmet_name","mean","p.value","q.value")]
-ft <- ft[order(ft$refmet_name),]
-
-dt <- d_lm_status[d_lm_status$refmet_name %in% cc,c("refmet_name","Value","p.value","q.value")]
-dt <- dt[order(dt$refmet_name),]
-
-common_tab <- data.frame(refmet_name = dt[,"refmet_name"], mean.pfas.met = ft$mean, pval.pfas.met = ft$p.value, 
-                         qval.pfas.met = ft$q.value, mean.met.t2d = dt$Value, pval.met.t2d = dt$p.value,
-                         qval.met.t2d = dt$q.value)
-
-common_tab
-
-#               refmet_name mean.pfas.met pval.pfas.met qval.pfas.met mean.met.t2d pval.met.t2d qval.met.t2d
-# 1    5-Hydroxy-tryptophan     0.3394450  7.232089e-04  1.062669e-02   -0.3158309  0.031736747    0.7303621
-# 2          Glucoheptulose     0.2048479  1.256501e-02  8.180441e-02   -0.3400293  0.025262938    0.7303621
-# 3 Sulfolithocholylglycine     0.5170315  4.024093e-09  1.142842e-06   -0.4648498  0.001309185    0.3718085
-
+common_tab[common_tab$pval.pfas.met < 0.005149676 | common_tab$pval.met.t2d < 0.005149676,]
 #################################################################################################################################
 
 # Pathway analysis
 # Positive
 
-em_comp_pfas_meta <- read.delim("C:/Users/midyav01/OneDrive - The Mount Sinai Hospital/MSSM Projects/BIOME-PFAS pilot/T2D/Paper T2D/pos/result_pfas_meta/tables/ListOfEmpiricalCompounds.tsv")
-colnames(em_comp_pfas_meta)[4:5] <- c("compounds_mummichog","compound_names_mummichog")
+# em_comp_pfas_meta <- read.delim("C:/Users/midyav01/OneDrive - The Mount Sinai Hospital/MSSM Projects/BIOME-PFAS pilot/T2D/Paper T2D/pos/result_pfas_meta/tables/ListOfEmpiricalCompounds.tsv")
+# colnames(em_comp_pfas_meta)[4:5] <- c("compounds_mummichog","compound_names_mummichog")
 
 
-em_comp_meta_t2d <- read.delim("C:\\Users\\midyav01\\OneDrive - The Mount Sinai Hospital\\MSSM Projects\\BIOME-PFAS pilot\\T2D\\Paper T2D\\pos\\result_meta_t2d\\tables\\ListOfEmpiricalCompounds.tsv")
-colnames(em_comp_meta_t2d)[4:5] <- c("compounds_mummichog","compound_names_mummichog")
+# em_comp_meta_t2d <- read.delim("C:\\Users\\midyav01\\OneDrive - The Mount Sinai Hospital\\MSSM Projects\\BIOME-PFAS pilot\\T2D\\Paper T2D\\pos\\result_meta_t2d\\tables\\ListOfEmpiricalCompounds.tsv")
+# colnames(em_comp_meta_t2d)[4:5] <- c("compounds_mummichog","compound_names_mummichog")
 
 
 em_pathways_pfas_meta  <- read.delim("C:\\Users\\midyav01\\OneDrive - The Mount Sinai Hospital\\MSSM Projects\\BIOME-PFAS pilot\\T2D\\Paper T2D\\pos\\result_pfas_meta\\tables\\mcg_pathwayanalysis_.tsv")
 colnames(em_pathways_pfas_meta)[5:7] <- c("overlap_EID","overlap_features_ID","overlap_features_names")
 
+
+em_pathways_pfas_meta[em_pathways_pfas_meta$p.value <0.05 & em_pathways_pfas_meta$pathway_size >=3,c('pathway', 'overlap_size', 'pathway_size',  
+                                                                                                     'p.value' )]
+# 1/length(em_pathways_pfas_meta$pathway)
+# 0.008403361
+# Tyrosine metabolism 
+
+
 em_pathways_meta_t2d  <- read.delim("C:\\Users\\midyav01\\OneDrive - The Mount Sinai Hospital\\MSSM Projects\\BIOME-PFAS pilot\\T2D\\Paper T2D\\pos\\result_meta_t2d\\tables\\mcg_pathwayanalysis_.tsv")
 colnames(em_pathways_meta_t2d)[5:7] <- c("overlap_EID","overlap_features_ID","overlap_features_names")
 
-cutoff <- 0.05
-common_paths_pos <- unique(c(em_pathways_pfas_meta$pathway[em_pathways_pfas_meta$p.value < cutoff], 
-                             em_pathways_meta_t2d$pathway[em_pathways_meta_t2d$p.value < cutoff]))
-common_paths_pos
-
-# [1] "Tyrosine metabolism"                                       "Glutamate metabolism"                                     
-# [3] "Ascorbate (Vitamin C) and Aldarate Metabolism"             "Bile acid biosynthesis"                                   
-# [5] "Vitamin B3 (nicotinate and nicotinamide) metabolism"       "Alanine and Aspartate Metabolism"                         
-# [7] "Putative anti-Inflammatory metabolites formation from EPA" "Arginine and Proline Metabolism"                          
-# [9] "Vitamin B9 (folate) metabolism"                            "Beta-Alanine metabolism"                                  
-# [11] "Glycine, serine, alanine and threonine metabolism"         "Butanoate metabolism"                                     
-# [13] "Leukotriene metabolism"                                    "Nitrogen metabolism"  
-
-
-
-# Negative
-
-em_comp_pfas_meta <- read.delim("C:/Users/midyav01/OneDrive - The Mount Sinai Hospital/MSSM Projects/BIOME-PFAS pilot/T2D/Paper T2D/neg/result_pfas_meta/tables/ListOfEmpiricalCompounds.tsv")
-colnames(em_comp_pfas_meta)[4:5] <- c("compounds_mummichog","compound_names_mummichog")
-
-
-em_comp_meta_t2d <- read.delim("C:\\Users\\midyav01\\OneDrive - The Mount Sinai Hospital\\MSSM Projects\\BIOME-PFAS pilot\\T2D\\Paper T2D\\neg\\result_meta_t2d\\tables\\ListOfEmpiricalCompounds.tsv")
-colnames(em_comp_meta_t2d)[4:5] <- c("compounds_mummichog","compound_names_mummichog")
-
-
-em_pathways_pfas_meta  <- read.delim("C:\\Users\\midyav01\\OneDrive - The Mount Sinai Hospital\\MSSM Projects\\BIOME-PFAS pilot\\T2D\\Paper T2D\\neg\\result_pfas_meta\\tables\\mcg_pathwayanalysis_.tsv")
-colnames(em_pathways_pfas_meta)[5:7] <- c("overlap_EID","overlap_features_ID","overlap_features_names")
-
-em_pathways_meta_t2d  <- read.delim("C:\\Users\\midyav01\\OneDrive - The Mount Sinai Hospital\\MSSM Projects\\BIOME-PFAS pilot\\T2D\\Paper T2D\\neg\\result_meta_t2d\\tables\\mcg_pathwayanalysis_.tsv")
-colnames(em_pathways_meta_t2d)[5:7] <- c("overlap_EID","overlap_features_ID","overlap_features_names")
-
-
-cutoff <- 0.05
-
-common_paths_neg <- unique(c(em_pathways_pfas_meta$pathway[em_pathways_pfas_meta$p.value < cutoff], 
-                             em_pathways_meta_t2d$pathway[em_pathways_meta_t2d$p.value < cutoff]))
-
-common_paths_neg
-
-intersect(common_paths_pos,common_paths_neg)
-
-
-
+em_pathways_meta_t2d[em_pathways_meta_t2d$p.value <0.05 & em_pathways_meta_t2d$pathway_size >=3,c('pathway', 'overlap_size', 'pathway_size',  
+                                                                                                  'p.value' )]
+# 1/length(em_pathways_meta_t2d$pathway)
+# 0.008403361
+# Bile acid biosynthesis
